@@ -36,44 +36,50 @@ function start(){
 start();
 
 function postItems(){
-	connection.query("SELECT item_id, product_name, price FROM products", function(err, res){
-		availProducts = [];
+	connection.query("SELECT * FROM products", function(err, res){
+		console.log("ID     Product    Dept    Price   Qty")
 		for (var i = 0; i < res.length; i++) {
-			availProducts.push(res[i].item_id + ".", res[i].product_name, "$" + res[i].price)
-		};
-		console.log(availProducts);
+			console.log(res[i].item_id+" | "+res[i].product_name+" | "+res[i].department_name+" | $"+res[i].price+" | "+res[i].stock_quantity)
+		}
+	promptBuy(res);
 	})
-
-// 	 .then function promtBuy(){
-// 		inquirer
-// 		.prompt([
-// 		{
-// 			name: "item",
-// 			type: "input"
-//         	message: "What is the Item you would like to submit?"
-// 		}
-// 		{
-// 			name: "item",
-// 			type: "input"
-//         	message: "What is the Category you would like to place it in?"
-// 		}
-// 		{
-// 	        name: "startingBid",
-// 	        type: "input",
-// 	        message: "What would you like the starting bid to be?",
-// 	        validate: function(value) {
-// 	          if (isNaN(value) === false) {
-// 	            return true;
-// 	          }
-// 	          return false;
-// 	        }
-//         }
-// 		])
-// 	}
-
 };
 
-
-
-
-
+function promptBuy(res){
+	inquirer.prompt([{
+		type: "input",
+		name: "choice",
+    	message: "What is the item you would like to purchase?"
+	}]).then(function(answer){
+		var correct = false;
+		for (var i = 0; i < res.length; i++) {
+			if (res[i].product_name==answer.choice) {
+				correct=true;
+				var product=answer.choice;
+				var id=i;
+				inquirer.prompt({
+					type:"input",
+					name:"qty",
+					message:"How many would you like to buy?",
+					validate: function(value){
+						if(isNaN(value)==false){
+							return true;
+						} else {
+							return false;
+						}
+					}
+				}).then(function(answer){
+					if ((res[id].stock_quantity-answer.qty)>0) {
+						connection.query("UPDATE products SET stock_quantity='"+(res[id].stock_quantity-answer.qty)+"'WHERE product_name='"+ product+"'", function(err, res2){
+							console.log("Purchase confirmed!");
+							postItems();
+						})
+					} else {
+						console.log("Invalid selection");
+						promptBuy(res);
+					}
+				})
+			}
+		}
+	})
+}
